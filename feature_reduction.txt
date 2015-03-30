@@ -1,0 +1,20 @@
+Aspekter av behandling av indata:
+
+	-Följa vad de tidigare gör! (state-of-the-art-grabbarna) dvs byta ut användarnamn och länkar till USERNAME och LINK / URL, ta bort upprepade
+	bokstäver.
+
+	-Stora små bokstäver? - Gör alla till små bokstäver
+
+	-Försöka korrigera felstavningar? - Inte just nu, finns källa som säger att det inte ger förbättring (citera källa som sa att d inte spelar roll?)
+
+	-Ta bort vissa tecken eller ej (typ kinesiska och så)? - Verkar inte vara ett problem med våra set	
+	
+	-Ta med irrelevanta? - Finns endast relevanta i testdata så strunta i dem i training data
+
+	-Plocka bort ord (korta ord samt vissa specifika ord annat än användarnamn och dylikt)? - Kanske senare, ej nu, men gör vi något ska det göras
+	både  i test- och träningsdata
+
+	-Plocka bort smileys i testdata? - Nej
+
+	-Storlek på träningsdata? - Laborera kanske med detta senare, borde vara till fördel för smiley-annotationsmetoden men vissa maskiner verkar också
+	fungera sämre med mycket indata... (naive-bayes bra för lite data, svm bra för mycket data)
