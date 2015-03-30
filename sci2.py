@@ -5,69 +5,56 @@ import numpy
 #the 2 following forces us to address DataFrame by pandas.DataFrame
 #import pandas.DataFrame
 import pandas
+import csv
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 
-def csv_training_feed(path, cols):
-	i = 0
-	if os.path.isfile(path):
-		f = open(path)
-		for line in f:
-			row_tokens = line.split(",", cols - 1)
-			if len(row_tokens) == cols:
-				i += 1
-				yield row_tokens #return one line from the input
-		print("Processed training data: " + str(i))
-		f.close()
+trainingData = pandas.DataFrame({'text': [], 'class': []})
+with open('training.csv') as csvfile:
+	reader = csv.DictReader(csvfile, delimiter=';')
+	for row in reader:
+		if row['polarity'] in ('0', '4'):
+			trainingData = trainingData.append(pandas.DataFrame({'text': [row['tweet']], 'class': [row['polarity']]}, index=[row['id']]))
 
-def csv_test_feed(path, cols, col_to_get, delimiter):
-	if os.path.isfile(path):
-		f = open(path)
-		lines = []
-		for line in f:
-			row_tokens = line.split(delimiter, cols - 1)
-			if len(row_tokens) == cols:
-				lines.append(row_tokens[col_to_get].rstrip(' "').lstrip(' "'))
-		f.close()
-		return lines
-  
-#check command line arguments...
-if len(sys.argv) != 3:
-	sys.exit("Please supply input and output file arguments")
-	
+#stanford test
+stanford_test = []
+testData = pandas.DataFrame({'text': [], 'class': []})
+with open('testing.csv') as csvfile:
+	reader = csv.DictReader(csvfile, fieldnames=('polarity', 'id', 'date', 'query', 'user', 'tweet'))
+	for row in reader:
+		if row['polarity'] in ('0', '4'):
+			#stanford_test.append((row['tweet'], row['polarity']))
+			testData = testData.append(pandas.DataFrame({'text': [row['tweet']], 'class': [row['polarity']]}, index=[row['id']]))
+
+
 #our 2 classifications
-POSITIVE = 0
-NEGATIVE = 1
-
-data = pandas.DataFrame({'text': [], 'class': []})
-training_file = sys.argv[1]
-testing_file = sys.argv[2]
-for arr in csv_training_feed(training_file, 5):
-	classification = -1 #only care about those that has either a positive or negative classification, no irrelevant ones
-	arr[1] = arr[1].lstrip(' "').rstrip(' "').lower()
-	if arr[1] == "negative":
-		classification = NEGATIVE
-	elif arr[1] == "positive":
-		classification = POSITIVE
-	if classification != -1: #this is a message that we are interested in...
-		data = data.append(pandas.DataFrame({'text': [arr[4].lstrip(' "').rstrip(' "\n')], 'class': [classification]}, index=[arr[2].lstrip(' "').rstrip(' "')]))
+POSITIVE = "4"
+NEGATIVE = "0"
 	
-data = data.reindex(numpy.random.permutation(data.index)) #don't know why this reindexing is important...
+trainingData = trainingData.reindex(numpy.random.permutation(trainingData.index)) #don't know why this reindexing is important...
 
-count_vectorizer = CountVectorizer(min_df = 1) #how many times a certain word has to appear in the text to take it into account
-counts = count_vectorizer.fit_transform(numpy.asarray(data['text']))
+count_vectorizer = CountVectorizer(ngram_range=(1, 1), analyzer='word') #how many times a certain word has to appear in the text to take it into account
+counts = count_vectorizer.fit_transform(numpy.asarray(trainingData['text']))
 
 classifier = MultinomialNB()
-targets = numpy.asarray(data['class'])
+#print(counts)
+targets = numpy.asarray(trainingData['class'])
 classifier.fit(counts, targets)
 
 #examples = ['linux viagra', "I'm going to attend the Linux users group tomorrow."]
 #examples = ['#summer is coming! yay!', "I'm so goddamn angry right now, why is @apple introducing this new feature?"]
-examples = csv_test_feed(testing_file, 6, 5, ',')
+#examples = csv_test_feed(testing_file, 6, 5, ',')
 
-example_counts = count_vectorizer.transform(examples)
+example_counts = count_vectorizer.transform(numpy.asarray(testData['text']))
 predictions = classifier.predict(example_counts)
 print("Processed predictions: " + str(len(predictions)))
-for i in range(len(examples)):
-	print(str(predictions[i]) + ": " + examples[i], end="")
+count = 0
+for (i, sentiment) in enumerate(numpy.asarray(testData['class'])):
+	#print(str(predictions[i]) + ": " + sentiment)
+	if predictions[i] == sentiment:
+		count = count + 1
+
+print("count: " + str(count))
+print("predictions: " + str(len(predictions)))
+print(count / float(len(predictions)))
 #print(predictions)
