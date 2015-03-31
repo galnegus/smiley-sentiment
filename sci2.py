@@ -11,7 +11,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 
 trainingData = pandas.DataFrame({'text': [], 'class': []})
-with open('training.csv', newline='') as csvfile:
+with open('training.csv') as csvfile:
 	reader = csv.DictReader(csvfile, delimiter=';')
 	for row in reader:
 		if row['polarity'] in ('0', '4'):
@@ -20,7 +20,7 @@ with open('training.csv', newline='') as csvfile:
 #stanford test
 stanford_test = []
 testData = pandas.DataFrame({'text': [], 'class': []})
-with open('testing.csv', newline='') as csvfile:
+with open('testing.csv') as csvfile:
 	reader = csv.DictReader(csvfile, fieldnames=('polarity', 'id', 'date', 'query', 'user', 'tweet'))
 	for row in reader:
 		if row['polarity'] in ('0', '4'):
