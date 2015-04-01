@@ -1,14 +1,15 @@
 import os
 import sys
 import numpy
-#from pandas import DataFrame #allows us to address DataFrame by DataFrame only...
-#the 2 following forces us to address DataFrame by pandas.DataFrame
-#import pandas.DataFrame
 import pandas
 import csv
 import feature_reduction
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
+from nltk.corpus import stopwords
+from nltk import word_tokenize          
+from nltk.stem import WordNetLemmatizer 
+from nltk.stem.snowball import EnglishStemmer
 
 trainingData = pandas.DataFrame({'text': [], 'class': []})
 with open('training.csv') as csvfile:
@@ -18,33 +19,28 @@ with open('training.csv') as csvfile:
 			trainingData = trainingData.append(pandas.DataFrame({'text': [feature_reduction.reduce(row['tweet'])], 'class': [row['polarity']]}, index=[row['id']]))
 
 #stanford test
-stanford_test = []
 testData = pandas.DataFrame({'text': [], 'class': []})
 with open('testing.csv') as csvfile:
 	reader = csv.DictReader(csvfile, fieldnames=('polarity', 'id', 'date', 'query', 'user', 'tweet'))
 	for row in reader:
 		if row['polarity'] in ('0', '4'):
-			#stanford_test.append((row['tweet'], row['polarity']))
 			testData = testData.append(pandas.DataFrame({'text': [feature_reduction.reduce(row['tweet'])], 'class': [row['polarity']]}, index=[row['id']]))
 
+class StemTokenizer(object):
+	def __init__(self):
+		self.stemmer = EnglishStemmer()
+	def __call__(self, doc):
+		return [self.stemmer.stem(t) for t in word_tokenize(doc)]
 
-#our 2 classifications
-POSITIVE = "4"
-NEGATIVE = "0"
-	
-trainingData = trainingData.reindex(numpy.random.permutation(trainingData.index)) #don't know why this reindexing is important...
-
-count_vectorizer = CountVectorizer(ngram_range=(1, 1), analyzer='word', stop_words='english', strip_accents='unicode') #how many times a certain word has to appear in the text to take it into account
+stop_words = stopwords.words('english')
+stop_words.extend([feature_reduction.user_token.lower(), feature_reduction.url_token.lower()]);
+count_vectorizer = CountVectorizer(ngram_range=(1, 1), stop_words=stop_words, tokenizer=StemTokenizer()) #how many times a certain word has to appear in the text to take it into account
 counts = count_vectorizer.fit_transform(numpy.asarray(trainingData['text']))
 
-classifier = MultinomialNB()
-#print(counts)
+classifier = MultinomialNB(fit_prior=False, alpha=1.0)
+
 targets = numpy.asarray(trainingData['class'])
 classifier.fit(counts, targets)
-
-#examples = ['linux viagra', "I'm going to attend the Linux users group tomorrow."]
-#examples = ['#summer is coming! yay!', "I'm so goddamn angry right now, why is @apple introducing this new feature?"]
-#examples = csv_test_feed(testing_file, 6, 5, ',')
 
 example_counts = count_vectorizer.transform(numpy.asarray(testData['text']))
 predictions = classifier.predict(example_counts)
