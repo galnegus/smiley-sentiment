@@ -1,6 +1,4 @@
 import os
-import numpy
-import pandas
 import csv
 import feature_reduction
 
@@ -26,20 +24,22 @@ class StemTokenizer(object):
 	def __call__(self, doc):
 		return [self.stemmer.stem(t) for t in word_tokenize(doc)]
 
-trainingData = pandas.DataFrame({'text': [], 'class': []})
+trainingData = {'text': [], 'class': []}
 with open('training.csv') as csvfile:
 	reader = csv.DictReader(csvfile, delimiter=';')
 	for row in reader:
 		if row['polarity'] in ('0', '4'):
-			trainingData = trainingData.append(pandas.DataFrame({'text': [feature_reduction.reduce(row['tweet'])], 'class': [row['polarity']]}, index=[row['id']]))
+			trainingData['text'].append(feature_reduction.reduce(row['tweet']))
+			trainingData['class'].append(row['polarity'])
 
 #stanford test
-testData = pandas.DataFrame({'text': [], 'class': []})
+testData = {'text': [], 'class': []}
 with open('testing.csv') as csvfile:
 	reader = csv.DictReader(csvfile, fieldnames=('polarity', 'id', 'date', 'query', 'user', 'tweet'))
 	for row in reader:
 		if row['polarity'] in ('0', '4'):
-			testData = testData.append(pandas.DataFrame({'text': [feature_reduction.reduce(row['tweet'])], 'class': [row['polarity']]}, index=[row['id']]))
+			testData['text'].append(feature_reduction.reduce(row['tweet']))
+			testData['class'].append(row['polarity'])
 
 stop_words = stopwords.words('english')
 stop_words.extend([feature_reduction.user_token.lower(), feature_reduction.url_token.lower()]);
@@ -56,11 +56,11 @@ pipe = Pipeline([
 				])
 
 #applies fit and transform to first parameter at all stages but the last, where only fit is applied
-pipe.fit(numpy.asarray(trainingData['text']), numpy.asarray(trainingData['class']))
+pipe.fit(trainingData['text'], trainingData['class'])
 
 #applies transform at all stages but the last one where predict is applied
-predictions = pipe.predict(numpy.asarray(testData['text']))
+predictions = pipe.predict(testData['text'])
 
 #http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_recall_fscore_support.html for details of categories
 #total recall is the same value as the correctly predicted sentiments / all documents yields
-print(metrics.classification_report(numpy.asarray(testData['class']), predictions, target_names= ['Positive', 'Negative'], digits = 5 ))
+print(metrics.classification_report(testData['class'], predictions, target_names= ['Positive', 'Negative'], digits = 5 ))
