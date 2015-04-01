@@ -7,6 +7,7 @@ import feature_reduction
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import SGDClassifier
 from nltk.corpus import stopwords
 from nltk import word_tokenize          
 from nltk.stem import WordNetLemmatizer 
@@ -41,6 +42,7 @@ pipe = Pipeline([
 					('counter', CountVectorizer(ngram_range=(1, 1), stop_words=stop_words, tokenizer=StemTokenizer())), 
 					#('normalizer', TfidfTransformer(smooth_idf=True, sublinear_tf=False, use_idf=True)), #should we want to use a TfidfTransformer
 					('classifier', MultinomialNB(fit_prior=False, alpha=1.0))
+					#('classifier', SGDClassifier())
 				])
 
 #applies fit and transform to first parameter at all stages but the last, where only fit is applied
