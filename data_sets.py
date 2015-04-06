@@ -37,5 +37,3 @@ def training_100000():
 	return _stanford_parse('data/training.100000.csv')
 def training_1600000():
 	return _stanford_parse('data/training.1600000.processed.noemoticon.csv')
-
-print(training_2000())
