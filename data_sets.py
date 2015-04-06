@@ -12,7 +12,7 @@ def _stanford_parse(filename):
 
 def _sts_gold_parse(filename):
 	data = {'text': [], 'class': []}
-	with open('training.csv') as csvfile:
+	with open(filename) as csvfile:
 		reader = csv.DictReader(csvfile, delimiter=';')
 		for row in reader:
 			if row['polarity'] in ('0', '4'):
