@@ -1,6 +1,8 @@
 import os
 import csv
 import feature_reduction
+import data_sets
+import argparse
 
 #preprocessing
 from nltk.corpus import stopwords
@@ -15,6 +17,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import SVC
 from sklearn.svm import NuSVC
 from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn import metrics
 
@@ -23,37 +26,38 @@ class StemTokenizer(object):
 		self.stemmer = EnglishStemmer()
 	def __call__(self, doc):
 		return [self.stemmer.stem(t) for t in word_tokenize(doc)]
+		
+#set up command line parser
+parser = argparse.ArgumentParser(description='Run a classifier session with training, testing and output of result statistics.')
+parser.add_argument('training_set', choices=['sts_2000', 'sf_2000', 'sf_10000', 'sf_100000', 'sf_1600000'], action='store', help='the training set to use for this run')
+parser.add_argument('classifier', action='store', choices=['nb', 'svm_poly', 'svm_linear', 'me'], help='the classifier to use for this run')
+parser.add_argument('-grams', action="store", default='uni', choices=['uni', 'bi', 'both'], help='whether we want to use unigrams, bigrams or both, stopwords may be problematic if used with other than unigrams')
+parser.add_argument('--stopwords', action='store_true', default=False, help='if we want to use stopwords for this run or not')
+parser.add_argument('--tfid', action='store_true', default=False, help='if we want data to be processed by a normalizer in this run')
 
-trainingData = {'text': [], 'class': []}
-with open('training.csv') as csvfile:
-	reader = csv.DictReader(csvfile, delimiter=';')
-	for row in reader:
-		if row['polarity'] in ('0', '4'):
-			trainingData['text'].append(feature_reduction.reduce(row['tweet']))
-			trainingData['class'].append(row['polarity'])
+#parse arguments
+args = parser.parse_args()
 
-#stanford test
-testData = {'text': [], 'class': []}
-with open('testing.csv') as csvfile:
-	reader = csv.DictReader(csvfile, fieldnames=('polarity', 'id', 'date', 'query', 'user', 'tweet'))
-	for row in reader:
-		if row['polarity'] in ('0', '4'):
-			testData['text'].append(feature_reduction.reduce(row['tweet']))
-			testData['class'].append(row['polarity'])
-
+#set up the run
+trainingData = getattr(data_sets, args.training_set)()
+testData = data_sets.testing()
 stop_words = stopwords.words('english')
 stop_words.extend([feature_reduction.user_token.lower(), feature_reduction.url_token.lower()]);
 
-pipe = Pipeline([
-					('counter', CountVectorizer(ngram_range=(1, 1), stop_words=stop_words, tokenizer=StemTokenizer())), 
-					#('normalizer', TfidfTransformer(smooth_idf=True, sublinear_tf=False, use_idf=True)), #should we want to use a TfidfTransformer
-					#('classifier', MultinomialNB(fit_prior=False, alpha=1.0))
-					#('classifier', SVC()) #default kernel is 'rbf', 'rbf' and 'poly' results in an error... why?
-					#('classifier', SVC(kernel='poly')) #error...
-					('classifier', SVC(kernel='linear')) #this one and the one below yield different results, why?
-					#('classifier', LinearSVC())
-					
-				])
+#setup parameters for our classifier pipeline
+params = []
+grams = (1,1)
+if(args.grams == 'bi'): grams = (2,2)
+elif(args.grams == 'both'): grams = (1,2)
+if(args.stopwords == True): params.append(('counter', CountVectorizer(ngram_range=grams, stop_words=stop_words, tokenizer=StemTokenizer())))
+else: params.append(('counter', CountVectorizer(ngram_range=grams, tokenizer=StemTokenizer())))
+if(args.tfid == True): params.append(('normalizer', TfidfTransformer(smooth_idf=True, sublinear_tf=False, use_idf=True))) #should we want to use a TfidfTransformer
+if(args.classifier == 'nb'): params.append(('classifier', MultinomialNB(fit_prior=False, alpha=1.0)))
+elif(args.classifier == 'svm_poly'): params.append(('classifier', SVC(kernel='poly'))) #error...
+elif(args.classifier == 'svm_linear'): params.append(('classifier', LinearSVC())) #similar to SVC(kernel='linear') but implemented differently and should be more accurate
+elif(args.classifier == 'me'): params.append(('classifier', LogisticRegression())) #maximum entropy
+
+pipe = Pipeline(params)
 
 #applies fit and transform to first parameter at all stages but the last, where only fit is applied
 pipe.fit(trainingData['text'], trainingData['class'])

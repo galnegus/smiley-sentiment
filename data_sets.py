@@ -25,15 +25,15 @@ def testing():
 	return _stanford_parse('data/testing.csv')
 
 # hand annotated training data
-def training_sts_gold():
+def sts_2000():
 	return _sts_gold_parse('data/training.sts_gold.csv')
 
 # automatically (smiley) annotated training data
-def training_2000():
+def sf_2000():
 	return _stanford_parse('data/training.2000.csv')
-def training_10000():
+def sf_10000():
 	return _stanford_parse('data/training.10000.csv')
-def training_100000():
+def sf_100000():
 	return _stanford_parse('data/training.100000.csv')
-def training_1600000():
+def sf_1600000():
 	return _stanford_parse('data/training.1600000.processed.noemoticon.csv')
