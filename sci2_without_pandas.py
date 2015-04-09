@@ -51,11 +51,11 @@ if(args.grams == 'bi'): grams = (2,2)
 elif(args.grams == 'both'): grams = (1,2)
 if(args.stopwords == True): params.append(('counter', CountVectorizer(ngram_range=grams, stop_words=stop_words, tokenizer=StemTokenizer())))
 else: params.append(('counter', CountVectorizer(ngram_range=grams, tokenizer=StemTokenizer())))
-if(args.tfid == True): params.append(('normalizer', TfidfTransformer(smooth_idf=True, sublinear_tf=False, use_idf=True))) #should we want to use a TfidfTransformer
+if(args.tfid == True): params.append(('normalizer', TfidfTransformer(smooth_idf=False, sublinear_tf=True, use_idf=True))) #should we want to use a TfidfTransformer
 if(args.classifier == 'nb'): params.append(('classifier', MultinomialNB(fit_prior=False, alpha=1.0)))
-elif(args.classifier == 'svm_poly'): params.append(('classifier', SVC(kernel='poly'))) #error...
-elif(args.classifier == 'svm_linear'): params.append(('classifier', LinearSVC())) #similar to SVC(kernel='linear') but implemented differently and should be more accurate
-elif(args.classifier == 'me'): params.append(('classifier', LogisticRegression())) #maximum entropy
+elif(args.classifier == 'svm_poly'): params.append(('classifier', SVC(kernel='poly', gamma=1.0, coef0=21))) #error...
+elif(args.classifier == 'svm_linear'): params.append(('classifier', LinearSVC(loss='hinge', C=8, fit_intercept=False))) #use wout params if not stopwords and tfid, similar to SVC(kernel='linear') but implemented differently and should be more accurate
+elif(args.classifier == 'me'): params.append(('classifier', LogisticRegression(C=5.5))) #maximum entropy
 
 pipe = Pipeline(params)
 
